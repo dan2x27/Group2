@@ -1,0 +1,52 @@
+using System;
+using System.Collections.Generic;
+using System.IO;
+using System.Runtime.Serialization.Formatters.Binary;
+
+mag add og text 
+public class Player
+{
+    public string Name { get; set; }
+    public int Health { get; set; }
+    public List<string> Inventory { get; set; }
+
+    public Player(string name)
+    {
+        Name = name;
+        Health = 100;
+        Inventory = new List<string>();
+    }
+
+    public override string ToString()
+    {
+        return $"Player: {Name}, Health: {Health}, Inventory: {string.Join(", ", Inventory)}";
+    }
+}
+
+mag add og text 
+public class Enemy
+{
+    public string Name { get; set; }
+    public int Health { get; set; }
+    public int AttackPower { get; set; }
+
+    public Enemy(string name, int health, int attackPower)
+    {
+        Name = name;
+        Health = health;
+        AttackPower = attackPower;
+    }
+}
+
+mag add
+public class Room
+{
+    public string Description { get; set; }
+    public List<object> Contents { get; set; }
+
+    public Room(string description, List<object> contents = null)
+    {
+        Description = description;
+        Contents = contents ?? new List<object>();
+    }
+}
