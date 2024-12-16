@@ -1,0 +1,149 @@
+import random
+import json
+import os
+
+
+class Player:
+    def __init__(self, name):
+        self.name = name
+        self.health = 100
+        self.inventory = []
+        self.rooms_cleared = 0
+
+    def display_stats(self):
+        print(f"\nPlayer: {self.name}")
+        print(f"Health: {self.health}")
+        print(f"Inventory: {', '.join(self.inventory) if self.inventory else 'Empty'}")
+        print(f"Rooms Cleared: {self.rooms_cleared}\n")
+
+class Enemy:
+    def __init__(self, name, health, attack_power):
+        self.name = name
+        self.health = health
+        self.attack_power = attack_power
+
+
+class Room:
+    def __init__(self, description, contents):
+        self.description = description
+        self.contents = contents  
+
+
+SAVE_FILE = "dungeon_save.json"
+
+def save_game(player, rooms):
+    data = {
+        "player": {
+            "name": player.name,
+            "health": player.health,
+            "inventory": player.inventory,
+            "rooms_cleared": player.rooms_cleared
+        },
+        "rooms": [{"description": r.description, "contents": r.contents.__class__.__name__ if r.contents else None} for r in rooms]
+    }
+    with open(SAVE_FILE, "w") as f:
+        json.dump(data, f)
+    print("Game saved successfully!\n")
+
+def load_game():
+    if os.path.exists(SAVE_FILE):
+        with open(SAVE_FILE, "r") as f:
+            data = json.load(f)
+        player_data = data["player"]
+        player = Player(player_data["name"])
+        player.health = player_data["health"]
+        player.inventory = player_data["inventory"]
+        player.rooms_cleared = player_data["rooms_cleared"]
+        print("Game loaded successfully!\n")
+        return player
+    else:
+        print("No saved game found. Starting a new game.\n")
+        return None
+
+# Generate Random Dungeon Layout
+def generate_dungeon():
+    descriptions = [
+        "A dark and musty room.",
+        "A torch-lit corridor with strange markings.",
+        "A treasure chamber filled with glittering gold.",
+        "A room filled with ominous growls.",
+        "A quiet library with dusty books.",
+    ]
+    rooms = []
+    for i in range(5):
+        contents = None
+        if random.choice([True, False]):
+            contents = Enemy("Goblin", 30, 10)  # Random enemy
+        elif random.choice([True, False]):
+            contents = "Treasure Chest"
+        room = Room(random.choice(descriptions), contents)
+        rooms.append(room)
+    return rooms
+
+# Main Game Loop
+def main():
+    print("Welcome to the Text-Based Dungeon Adventure!\n")
+    choice = input("Do you want to load a saved game? (yes/no): ").lower()
+    player = None
+    if choice == "yes":
+        player = load_game()
+    if not player:
+        name = input("Enter your character's name: ")
+        player = Player(name)
+
+    rooms = generate_dungeon()
+    current_room_index = 0
+
+    while player.health > 0 and current_room_index < len(rooms):
+        current_room = rooms[current_room_index]
+        print(f"You enter: {current_room.description}")
+
+        if isinstance(current_room.contents, Enemy):
+            enemy = current_room.contents
+            print(f"An enemy {enemy.name} appears! It has {enemy.health} health.")
+            while enemy.health > 0 and player.health > 0:
+                action = input("Do you want to [attack] or [flee]? ").lower()
+                if action == "attack":
+                    damage = random.randint(5, 15)
+                    enemy.health -= damage
+                    print(f"You hit the {enemy.name} for {damage} damage!")
+                    if enemy.health > 0:
+                        player.health -= enemy.attack_power
+                        print(f"The {enemy.name} hits you for {enemy.attack_power} damage! Your health: {player.health}")
+                elif action == "flee":
+                    print("You flee to the previous room.")
+                    current_room_index = max(0, current_room_index - 1)
+                    break
+                else:
+                    print("Invalid action.")
+
+            if enemy.health <= 0:
+                print(f"You defeated the {enemy.name}!")
+                player.rooms_cleared += 1
+        elif current_room.contents == "Treasure Chest":
+            treasure = random.choice(["Gold Coin", "Magic Sword", "Health Potion"])
+            print(f"You found a {treasure}!")
+            player.inventory.append(treasure)
+            if treasure == "Health Potion":
+                player.health += 20
+                print("You used the Health Potion and restored 20 health!")
+            player.rooms_cleared += 1
+        else:
+            print("The room is empty.")
+
+        player.display_stats()
+        action = input("Do you want to move [north] or [save]? ").lower()
+        if action == "north":
+            current_room_index += 1
+        elif action == "save":
+            save_game(player, rooms)
+        else:
+            print("Invalid action.")
+
+    if player.health <= 0:
+        print("You have died. Game Over.")
+    elif current_room_index >= len(rooms):
+        print("Congratulations! You cleared the dungeon!")
+
+if __name__ == "__main__":
+    main()
